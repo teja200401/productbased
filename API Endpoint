@@ -1,0 +1,64 @@
+import { Request, Response } from 'express';
+import pool from '../db';
+import PDFDocument from 'pdfkit';
+
+export const getProductPDF = async (req: Request, res: Response) => {
+  const id = req.params.id;
+
+  try {
+    const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const product = result.rows[0];
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const buffers: Uint8Array[] = [];
+
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=product_${id}_report.pdf`);
+      res.send(pdfData);
+    });
+
+    // Build PDF content here (same as before)
+    doc.fontSize(22).fillColor('#0a3d62').text('Product Submission Report', { align: 'center', underline: true });
+    doc.moveDown(1);
+    doc.fontSize(10).fillColor('gray').text(`Report Generated: ${new Date().toLocaleString()}`, { align: 'right' });
+    doc.fontSize(10).fillColor('gray').text(`Product ID: ${product.id}`, { align: 'right' });
+    doc.moveDown(2);
+
+    doc.fontSize(16).fillColor('#34495e').text('Product Details', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(12).fillColor('#2f3640').text(`Name: ${product.name}`);
+    doc.text(`Category: ${product.category}`);
+    doc.moveDown(1);
+
+    if (product.category.toLowerCase() === 'physical') {
+      doc.fontSize(14).fillColor('#273c75').text('Physical Product Specifications:', { underline: true });
+      doc.moveDown(0.3);
+      doc.fontSize(12).fillColor('#192a56');
+      doc.text(`- Weight: ${product.weight ?? 'Not specified'}`);
+      doc.text(`- Dimensions: ${product.dimensions ?? 'Not specified'}`);
+    } else if (product.category.toLowerCase() === 'digital') {
+      doc.fontSize(14).fillColor('#273c75').text('Digital Product Specifications:', { underline: true });
+      doc.moveDown(0.3);
+      doc.fontSize(12).fillColor('#192a56');
+      doc.text(`- Warranty Period: ${product.warranty_period ?? 'Not specified'}`);
+      doc.text(`- Support Email: ${product.support_email ?? 'Not specified'}`);
+    }
+
+    doc.moveDown(2);
+    doc.fontSize(10).fillColor('gray').text('© Company Confidential', { align: 'center' });
+
+    doc.end();
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate PDF' });
+  }
+};
