@@ -1,0 +1,33 @@
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) NOT NULL CHECK (category IN ('physical', 'digital')),
+  weight VARCHAR(100),
+  dimensions VARCHAR(100),
+  warranty_period VARCHAR(100),
+  support_email VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE questions (
+  id SERIAL PRIMARY KEY,
+  product_category VARCHAR(50) NOT NULL CHECK (product_category IN ('physical', 'digital')),
+  question_text TEXT NOT NULL,
+  input_type VARCHAR(50) NOT NULL, -- e.g. text, number, email, select
+  options TEXT[], -- JSON or text[] for dropdown options
+  required BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE product_answers (
+  id SERIAL PRIMARY KEY,
+  product_id INT REFERENCES products(id) ON DELETE CASCADE,
+  question_id INT REFERENCES questions(id) ON DELETE CASCADE,
+  answer TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+CREATE TABLE reports (
+  id SERIAL PRIMARY KEY,
+  product_id INT REFERENCES products(id) ON DELETE CASCADE,
+  report_path VARCHAR(255), -- e.g. S3 URL or local path if saved
+  generated_at TIMESTAMP DEFAULT NOW(),
+  generated_by VARCHAR(255) -- user/company identifier
+);
