@@ -1,0 +1,85 @@
+import PDFDocument from 'pdfkit';
+
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  weight?: string | null;
+  dimensions?: string | null;
+  warranty_period?: string | null;
+  support_email?: string | null;
+  created_at: string;
+}
+
+export function generateProductPDF(product: Product): Buffer {
+  const doc = new PDFDocument({ margin: 50, size: 'A4' });
+  const buffers: Uint8Array[] = [];
+
+  doc.on('data', buffers.push.bind(buffers));
+  doc.on('end', () => {});
+
+  // HEADER
+  doc
+    .fontSize(22)
+    .fillColor('#0a3d62')
+    .text('Product Submission Report', { align: 'center', underline: true });
+
+  doc.moveDown(1);
+
+  // Date and Report ID
+  doc
+    .fontSize(10)
+    .fillColor('gray')
+    .text(`Report Generated: ${new Date().toLocaleString()}`, { align: 'right' });
+  doc
+    .fontSize(10)
+    .fillColor('gray')
+    .text(`Product ID: ${product.id}`, { align: 'right' });
+
+  doc.moveDown(2);
+
+  // PRODUCT DETAILS
+  doc
+    .fontSize(16)
+    .fillColor('#34495e')
+    .text('Product Details', { underline: true });
+
+  doc.moveDown(0.5);
+
+  doc.fontSize(12).fillColor('#2f3640');
+  doc.text(`Name: ${product.name}`);
+  doc.text(`Category: ${product.category}`);
+
+  doc.moveDown(1);
+
+  // CONDITIONAL DATA BLOCK
+  if (product.category.toLowerCase() === 'physical') {
+    doc.fontSize(14).fillColor('#273c75').text('Physical Product Specifications:', {
+      underline: true,
+    });
+    doc.moveDown(0.3);
+    doc.fontSize(12).fillColor('#192a56');
+    doc.text(`- Weight: ${product.weight ?? 'Not specified'}`);
+    doc.text(`- Dimensions: ${product.dimensions ?? 'Not specified'}`);
+  } else if (product.category.toLowerCase() === 'digital') {
+    doc.fontSize(14).fillColor('#273c75').text('Digital Product Specifications:', {
+      underline: true,
+    });
+    doc.moveDown(0.3);
+    doc.fontSize(12).fillColor('#192a56');
+    doc.text(`- Warranty Period: ${product.warranty_period ?? 'Not specified'}`);
+    doc.text(`- Support Email: ${product.support_email ?? 'Not specified'}`);
+  }
+
+  doc.moveDown(2);
+
+  // FOOTER
+  doc
+    .fontSize(10)
+    .fillColor('gray')
+    .text('© Company Confidential', { align: 'center' });
+
+  doc.end();
+
+  return Buffer.concat(buffers);
+}
