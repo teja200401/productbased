@@ -1,0 +1,324 @@
+{
+  "name": "multi-step-form",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "typescript": "^5.0.4",
+    "vite": "^4.0.0"
+  }
+}
+export interface ProductFormData {
+  name: string;
+  category: string;
+  weight?: string;
+  dimensions?: string;
+  warrantyPeriod?: string;
+  supportEmail?: string;
+}
+import React from 'react';
+import { ProductFormData } from '../../types/form.types';
+
+interface Props {
+  data: ProductFormData;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  next: () => void;
+}
+
+const Step1: React.FC<Props> = ({ data, onChange, next }) => {
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data.name.trim()) return alert('Please enter product name');
+    if (!data.category) return alert('Please select category');
+    next();
+  };
+
+  return (
+    <form onSubmit={handleNext}>
+      <h2>Step 1: Basic Product Info</h2>
+      <label>
+        Product Name:
+        <input type="text" name="name" value={data.name} onChange={onChange} />
+      </label>
+      <br />
+      <label>
+        Category:
+        <select name="category" value={data.category} onChange={onChange}>
+          <option value="">Select</option>
+          <option value="physical">Physical</option>
+          <option value="digital">Digital</option>
+        </select>
+      </label>
+      <br />
+      <button type="submit">Next</button>
+    </form>
+  );
+};
+
+export default Step1;
+import React from 'react';
+import { ProductFormData } from '../../types/form.types';
+
+interface Props {
+  data: ProductFormData;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  next: () => void;
+  back: () => void;
+}
+
+const Step2: React.FC<Props> = ({ data, onChange, next, back }) => {
+  const isPhysical = data.category === 'physical';
+  const isDigital = data.category === 'digital';
+
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isPhysical) {
+      if (!data.weight?.trim() || !data.dimensions?.trim()) {
+        return alert('Please fill in weight and dimensions');
+      }
+    } else if (isDigital) {
+      if (!data.warrantyPeriod?.trim() || !data.supportEmail?.trim()) {
+        return alert('Please fill in warranty and support email');
+      }
+    }
+    next();
+  };
+
+  return (
+    <form onSubmit={handleNext}>
+      <h2>Step 2: Additional Info</h2>
+
+      {isPhysical && (
+        <>
+          <label>
+            Weight:
+            <input type="text" name="weight" value={data.weight || ''} onChange={onChange} />
+          </label>
+          <br />
+          <label>
+            Dimensions:
+            <input type="text" name="dimensions" value={data.dimensions || ''} onChange={onChange} />
+          </label>
+        </>
+      )}
+
+      {isDigital && (
+        <>
+          <label>
+            Warranty Period:
+            <input type="text" name="warrantyPeriod" value={data.warrantyPeriod || ''} onChange={onChange} />
+          </label>
+          <br />
+          <label>
+            Support Email:
+            <input type="email" name="supportEmail" value={data.supportEmail || ''} onChange={onChange} />
+          </label>
+        </>
+      )}
+      <br />
+      <button type="button" onClick={back}>
+        Back
+      </button>{' '}
+      <button type="submit">Next</button>
+    </form>
+  );
+};
+
+export default Step2;
+import React from 'react';
+import { ProductFormData } from '../../types/form.types';
+
+interface Props {
+  data: ProductFormData;
+  back: () => void;
+  submit: () => void;
+}
+
+const Step3: React.FC<Props> = ({ data, back, submit }) => {
+  return (
+    <div>
+      <h2>Step 3: Review</h2>
+      <pre style={{ background: '#eee', padding: '1rem' }}>{JSON.stringify(data, null, 2)}</pre>
+      <button onClick={back}>Back</button>{' '}
+      <button onClick={submit}>Submit</button>
+    </div>
+  );
+};
+
+export default Step3;
+import React, { useState } from 'react';
+import Step1 from './steps/Step1';
+import Step2 from './steps/Step2';
+import Step3 from './steps/Step3';
+import { ProductFormData } from '../types/form.types';
+
+const MultiStepForm: React.FC = () => {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState<ProductFormData>({
+    name: '',
+    category: '',
+  });
+
+  const next = () => setStep((s) => s + 1);
+  const back = () => setStep((s) => s - 1);
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    alert('Submitting product:\n' + JSON.stringify(formData, null, 2));
+    // TODO: Replace with backend API call
+  };
+
+  return (
+    <div>
+      {step === 1 && <Step1 data={formData} onChange={onChange} next={next} />}
+      {step === 2 && <Step2 data={formData} onChange={onChange} next={next} back={back} />}
+      {step === 3 && <Step3 data={formData} back={back} submit={handleSubmit} />}
+    </div>
+  );
+};
+
+export default MultiStepForm;
+import React from 'react';
+import MultiStepForm from './components/MultiStepForm';
+
+const App: React.FC = () => {
+  return (
+    <div style={{ maxWidth: '600px', margin: '2rem auto', fontFamily: 'Arial, sans-serif' }}>
+      <h1>Dynamic Multi-Step Product Form</h1>
+      <MultiStepForm />
+    </div>
+  );
+};
+
+export default App;
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export default pool;
+import { Request, Response } from 'express';
+import pool from '../db';
+
+export const createProduct = async (req: Request, res: Response) => {
+  const { name, category, weight, dimensions, warrantyPeriod, supportEmail } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO products (name, category, weight, dimensions, warranty_period, support_email)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [name, category, weight || null, dimensions || null, warrantyPeriod || null, supportEmail || null],
+    );
+
+    res.status(201).json({ product: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+};
+
+export const getProductById = async (req: Request, res: Response) => {
+  const id = req.params.id;
+
+  try {
+    const result = await pool.query(`SELECT * FROM products WHERE id = $1`, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json({ product: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+};
+import { Router } from 'express';
+import { createProduct, getProductById } from '../controllers/productController';
+
+const router = Router();
+
+router.post('/products', createProduct);
+router.get('/products/:id', getProductById);
+
+export default router;
+import express from 'express';
+import cors from 'cors';
+import productRoutes from './routes/productRoutes';
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api', productRoutes);
+
+export default app;
+import app from './app';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  weight VARCHAR(100),
+  dimensions VARCHAR(100),
+  warranty_period VARCHAR(100),
+  support_email VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"scripts": {
+  "dev": "nodemon --exec ts-node src/server.ts",
+  "build": "tsc",
+  "start": "node dist/server.js"
+}
+const handleSubmit = async () => {
+  try {
+    const res = await fetch('http://localhost:4000/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to save product');
+    }
+
+    const data = await res.json();
+    alert('Product saved with ID: ' + data.product.id);
+    // Optionally reset form or navigate
+  } catch (err) {
+    alert(err.message);
+  }
+};
